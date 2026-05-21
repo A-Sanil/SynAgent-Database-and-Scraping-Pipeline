@@ -1,0 +1,35 @@
+# Database files (regenerated locally)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.sqlite3
+**/test_usb_mount/
+
+# Local environment / secrets
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.python-version
+*.egg-info/
+build/
+dist/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Presentations & internal docs (not part of the public pipeline)
+*.pptx
+*.docx
+SLIDESHOW.html
+PRESENTATION.html
+
+# Faiss indexes (rebuilt on demand)
+*.faiss
+*.index

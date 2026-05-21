@@ -1,0 +1,13 @@
+fastapi
+uvicorn[jupyter]
+jinja2
+httpx
+scrapling
+sentence-transformers
+faiss-cpu
+pdfplumber
+camelot-py[cv]
+chemdataextractor
+opsin
+rdkit-pypi
+pytesseract

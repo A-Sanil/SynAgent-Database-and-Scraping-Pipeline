@@ -1,0 +1,11 @@
+# Stronger US patent search terms (one per line)
+TI=(synthesis) AND ACETAMINOPHEN
+TI=(organic synthesis) AND catalyst
+TI=(pharmaceutical) AND SMILES
+TI=(chemical synthesis) AND yield
+TI=(lithium ion) AND electrolyte
+TI=(heterocyclic) AND preparation
+TI=(amide coupling) AND reaction
+TI=(photoredox) AND catalysis
+TI=(polymerization) AND initiator
+TI=(esterification) AND solvent
