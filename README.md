@@ -199,6 +199,66 @@ The structured records produced by this pipeline (SMILES pathways, reaction SMAR
 
 ---
 
+## Phase 1: ML Yield Prediction Engine
+
+With the database pipeline in place, the next layer is a **machine learning model that predicts reaction yield from the fingerprint + conditions** — so SynAgent's route planner can score routes by expected yield, not just structural feasibility.
+
+### What Was Built
+
+| Script | What it does |
+|--------|-------------|
+| `Agent tools/precalc_fingerprints.py` | Pre-computes 2048-bit DRFP blobs into the SQLite `reaction_fp` column |
+| `Agent tools/train_xgboost.py` | Trains XGBoost yield predictor — Optuna 30-trial × 5-fold CV + GPU |
+| `Agent tools/extend_xgboost.py` | Continues training from a saved checkpoint (v1 → v2) |
+| `Agent tools/reaction_clusters.py` | Clusters reactions by DRFP similarity; trains per-cluster specialist models |
+
+### How It Works
+
+Reactions are encoded as **DRFP (Differential Reaction Fingerprints)** — 2048-bit vectors representing the structural transformation as the symmetric difference of circular atom n-grams. Combined with reaction conditions into a **2174-feature vector**:
+
+```
+DRFP (2048) + temp_norm + time_log + n_reactants + source + solvent_onehot(61) + catalyst_onehot(61)
+```
+
+Trained on **414,667 reactions** from the full ORD export (`ord_full.db`), 80/10/10 split.
+
+### Results
+
+| Model | Trees | MAE | RMSE | R² |
+|-------|-------|-----|------|----|
+| v1 | 10,000 | 14.78% | 19.06% | 0.467 |
+| **v2** | **20,000** | **13.76%** | **18.49%** | **0.499** |
+
+**By yield range (v2):**
+
+| Range | MAE | Notes |
+|-------|-----|-------|
+| High yield (70–100%) | 12.9% | |
+| Mid yield (30–70%) | **11.5%** | Within target range |
+| Low yield (5–30%) | 22.1% | Noisy — missing solvent data |
+
+**Reaction clustering (k=20):** Per-cluster specialist models beat the global model in 11/19 clusters. Best specialist — **MAE 4.5%, R² 0.931** — indicates a highly homogeneous, predictable reaction class in the corpus.
+
+**Conformal prediction:** Split-conformal intervals calibrated on val set give 80/90/95% coverage guarantees. 90% CI mean width: ±15.8pp.
+
+### Quick Start
+
+```bash
+# Step 1: pre-compute fingerprints (one-time, ~2 hrs on CPU)
+python "Agent tools/precalc_fingerprints.py" --db path/to/ord_full.db
+
+# Step 2: train with GPU + Optuna hyperparameter search
+python "Agent tools/train_xgboost.py" --db path/to/ord_full.db --gpu --optuna
+
+# Step 3: extend training from checkpoint (v1 -> v2)
+python "Agent tools/extend_xgboost.py" --gpu --extra_rounds 10000
+
+# Step 4: reaction clustering analysis
+python "Agent tools/reaction_clusters.py" --db path/to/ord_full.db --k 20
+```
+
+---
+
 ## Next Steps
 
 The database is in place; the next milestone is to make it **queryable by an agent** rather than only by humans. The plan:
